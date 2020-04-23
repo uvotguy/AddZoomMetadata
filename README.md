@@ -4,11 +4,11 @@ An example of how to add metadata to *Zoom* recordings.  *Kaltura* administrator
 
 ## Getting Started
 
-This project was created in response to a request by Faculty and Staff at Penn State University.  Some users have a large number of *Kaltura* content and they were having trouble finding their course material.  Most faculty members use *Zoom* for remote course delivery, and the *Zoom* integration automatically uploads recordings to our *Kaltura* instance.  The integration software adds the recordings to a category called "Zoom Recordings".  The *Kaltura* search mechanism **does not** search the *category* field for entries, so there is no built-in way to search for them.
+This project was created in response to a request by Faculty and Staff at Penn State University.  Some  have a large amount of *Kaltura* content, and they were having trouble finding their course material.  Most faculty members use *Zoom* for remote course delivery, and the *Zoom* integration automatically uploads recordings to our *Kaltura* instance.  The integration software adds the recordings to a category called "Zoom Recordings".  The *Kaltura* search mechanism **does not** search the *category* field for entries, so there is no built-in way to search for them.
 
 Here's what we did to help end users find their *Zoom* recordings.
 
-We created a custom metadata schema to capture the following information:  Content Usage, Creative Commons License, and Open Educational Resources flag.  *Content Usage* is a multi-select field with items like "Personal Use", "Course Material", "Zoom Recording", and some others.  Users can select all that apply.  The schema sets each field as `<searchable>true</searchable>`, so a filter group is added to the MediaSpace "Filters" selection.
+We created a custom metadata schema to capture the following information:  Usage, Creative Commons License, and Open Educational Resources flag.  *Usage* is a multi-select field with items like "Personal Use", "Course Material", "Zoom Recording", and some others.  Users can select all that apply.  The schema sets each field as `<searchable>true</searchable>`, so a filter group is added to the MediaSpace "Filters" selection.
 
 The next step is to add this metadata to all *Zoom* recordings in our repository.  The program, *AddZoomMetadata*, adds a "zoom" tag and "Zoom Recording" metadata field.  We ran the program against our entire repository, then we created a daily task to add metadata to newly created *Zoom* recordings.
 
@@ -46,6 +46,8 @@ I typically copy the program files to *c:\Program Files\AddZoomMetadata*.
 * Kaltura API Client for C#
 
 ## Contributing
+
+
 
 Please submit a pull request or issue.  I will respond as soon as possible.
 
