@@ -1,0 +1,21 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="AddZoomMetadata.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="targetMetadataProfileId" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="startTimestamp" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="targetCategory" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Zoom Recordings</Value>
+    </Setting>
+    <Setting Name="kalturaPartnerId" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="kalturaAdminSecret" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Not set</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
