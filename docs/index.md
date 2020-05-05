@@ -1,7 +1,8 @@
 # Using the AddZoomMetadata Utility
 
 With the AddZoomMetadata utilitiy compiled (see the README file), get a list of command line options like this:
-    `AddZoomMetadata.exe --help`
+
+`AddZoomMetadata.exe --help`
 
 ## Initialization
 
@@ -27,9 +28,14 @@ The code should run to completion without an API exception.
 
 ### Metadata
 
-Adding metadata to your targeted entries can simplify searching in *MediaSpace*.  Find your target metadata schema in the KMC:  *KMC -> Settings -> Custom Data*.  Fields configured as *<searchable>true</searchable>* are added to the search filter in *MediaSpace*.
+Adding metadata to your targeted entries can simplify searching in *MediaSpace*.  Find your target metadata schema in the KMC:  *KMC -> Settings -> Custom Data*.  Fields configured as *<searchable>true</searchable>* are added to the search filter in *MediaSpace*.  Our metadata field looks somethinglike this:
+```
+<metadata>
+    <MediaType>Zoom Recording</MediaType>
+</metadata>
+```
 
-Modify the *KalturaUtilities -> addCustomMetadata()* method to suit your needs.  Keep in mind that the XML fields are order-dependent.  Be sure to insert fields in the order defined in your schema.
+You will need to modify the *KalturaUtilities -> addCustomMetadata()* method to suit your needs.  Keep in mind that **XML fields are order-dependent**.  Be sure to insert fields in the order defined in your schema.
 
 ## Generate XML Mode
 
@@ -41,24 +47,24 @@ When processing is complete, simply submit the XML files via the Bulk Upload int
 
 ## API Mode
 
-After initially processing your media catalog, you will probably want to set up a scheduled task to add metadata to new entries daily.  To do that, use *--generate-xml false*.  The proper API calls will be made to add the information "on the fly".
+After initially processing your media catalog, you will probably want to set up a scheduled task to add metadata to new entries daily.  To do that, use *--generate-xml false*.  The proper API calls will be made to add metadata "on the fly".
 
 ## Single Entry Mode
 
-To process a single media entry use the **--entry-id {id}** option.  The program will add metadata to the given Entry ID.
+To process a single media entry use the **--entry-id {id}** option.  The program will add metadata to the given Entry ID.  It will **not** store the timestamp of the media entry.
 
 ## Multiple Entries Mode
 
-In Multiple Entries Mode the program processes all *Zoom* recordings created since the last time the program was run.  The program stores the timestamp of the last Entry ID it processes (it processes entries in order of their creation).  See the *startTimestamp* field in your user config file.
+In Multiple Entries Mode the program processes all *Zoom* recordings created since the last time the program was run.  The program processes entries in order of their creation; it stores the timestamp of the last media entry.  See the *startTimestamp* field in your user config file.
 
 Single Entry Mode and Multiple Entries Mode are mutually exclusive.
 
 It is possible to start processing at an arbitrary date using the *--start-date* option like this:
 
-`Add ZoomMetadata --generate-xml false --start-date 2020-01-01`
+`AddZoomMetadata.exe --generate-xml false --start-date 2020-01-01`
 
 Any valid date format should be parsed properly.
 
 ## Logging
 
-The *NLog* package is used for logging.  The default behavior writes per-date log file in *c:\Logs\Nlog\AddZoomMetadata\{yyyy-mm-dd}.log.  Modify *Nlog.config* to suit your purposes.
+The *NLog* package is used for logging.  The default behavior writes per-date log file in *c:\Logs\Nlog\AddZoomMetadata\{yyyy-mm-dd}.log*.  Modify *Nlog.config* to suit your purposes.
