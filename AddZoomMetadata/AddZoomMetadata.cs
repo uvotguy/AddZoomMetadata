@@ -218,23 +218,29 @@ namespace AddZoomMetadata
                         Utilities.logInfo(LogLevel.Info, "=======================================================  " + Utilities.unixToDotNetTime(lastTimestamp).ToString());
                         foreach (MediaEntry entr in result.Objects)
                         {
-                            string tagXml = kalUtil.addZoomTag(entr, generateXml);
-                            string metaXml = kalUtil.addCustomMetadata(metaFilt, entr, generateXml, targetMetadataProfileId);
-
-                            if (generateXml)
+                            try
                             {
-                                if ((string.IsNullOrEmpty(tagXml) == false) ||
-                                    (string.IsNullOrEmpty(metaXml) == false))
-                                {
-                                    string xml = "<item><action>update</action ><entryId>" +
-                                                 entr.Id + "</entryId>" +
-                                                 tagXml + metaXml + "</item>";
-                                    lstXml.Add(xml);
-                                }
-                            }
+                                string tagXml = kalUtil.addZoomTag(entr, generateXml);
+                                string metaXml = kalUtil.addCustomMetadata(metaFilt, entr, generateXml, targetMetadataProfileId);
 
-                            string msg = string.Format("{0}:", entr.Id);
-                            Utilities.logInfo(LogLevel.Info, msg);
+                                if (generateXml)
+                                {
+                                    if ((string.IsNullOrEmpty(tagXml) == false) ||
+                                        (string.IsNullOrEmpty(metaXml) == false))
+                                    {
+                                        string xml = "<item><action>update</action ><entryId>" +
+                                                     entr.Id + "</entryId>" +
+                                                     tagXml + metaXml + "</item>";
+                                        lstXml.Add(xml);
+                                    }
+                                }
+
+                                string msg = string.Format("{0}:", entr.Id);
+                                Utilities.logInfo(LogLevel.Info, msg);
+                            } catch (Exception ex)
+                            {
+                                Utilities.logInfo(LogLevel.Error, Utilities.formatExceptionString(ex));
+                            }
 
                             lastEntryId = entr.Id;
                             lastTimestamp = entr.CreatedAt;
