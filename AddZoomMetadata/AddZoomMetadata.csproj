@@ -8,7 +8,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>AddZoomMetadata</RootNamespace>
     <AssemblyName>AddZoomMetadata</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
@@ -37,9 +37,11 @@
     <Reference Include="CommandLine, Version=2.8.0.0, Culture=neutral, PublicKeyToken=5a870481e358d379, processorArchitecture=MSIL">
       <HintPath>..\packages\CommandLineParser.2.8.0\lib\net461\CommandLine.dll</HintPath>
     </Reference>
-    <Reference Include="KalturaClient, Version=3.3.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\lib\KalturaGeneratedAPIClientsCsharp-15.17.0\KalturaClient\bin\Debug\net45\KalturaClient.dll</HintPath>
+    <Reference Include="KalturaClient">
+      <HintPath>..\..\KochKalturaUtilities\bin\Release\KalturaClient.dll</HintPath>
+    </Reference>
+    <Reference Include="KochKalturaUtilities">
+      <HintPath>..\..\KochKalturaUtilities\bin\Release\KochKalturaUtilities.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -63,7 +65,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="KalturaUtilities.cs" />
     <Compile Include="AddZoomMetadata.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -72,7 +73,6 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="Utilities.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

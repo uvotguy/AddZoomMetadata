@@ -1,19 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
-using System.Linq;
+﻿using CommandLine;
 using Kaltura;
 using Kaltura.Enums;
 using Kaltura.Types;
-using Kaltura.Request;
-using Kaltura.Services;
-using System.Threading;
-using System.Security.Cryptography;
-using System.Configuration;
-using System.Xml;
-using CommandLine;
 using NLog;
+using System;
+using System.Collections.Generic;
 
 namespace AddZoomMetadata
 {
@@ -21,16 +12,11 @@ namespace AddZoomMetadata
     {
         static void Main(string[] args)
         {
-            // Only Kaltura service administrators have access to these.  Make sure
-            // to protect them.
-            int partnerId = -1;
-            string secret = "";
+            Logger logger = NLog.LogManager.GetCurrentClassLogger();
 
             // See comments in App.config.
-            int targetMetadataProfileId = Properties.Settings.Default.targetMetadataProfileId;
             string targetCategory = Properties.Settings.Default.targetCategory;
 
-            bool generateXml = true;
             string entryId = "";
             DateTime startDate = DateTime.MaxValue;
 
@@ -38,12 +24,10 @@ namespace AddZoomMetadata
             //// the program executes - unless we specify a StartDate on the command
             //// line.
             int lastTimestamp = 0;
-            
+
             var parseResult = Parser.Default.ParseArguments<Options>(args)
                     .WithParsed(options =>
                     {
-                        generateXml = options.generateXml == "true";  // Required option.
-
                         entryId = options.entryId;  // Empty string if option not set.
                         if (string.IsNullOrEmpty(options.strDate) == false)
                         {
@@ -52,53 +36,20 @@ namespace AddZoomMetadata
                             {
                                 if (startDate.Year < 1970)
                                 {
-                                    Utilities.logInfo(LogLevel.Error, "Dates before 1970-01-01 not allowed.");
+                                    logger.Error("Dates before 1970-01-01 not allowed.");
                                     Environment.Exit(1);
                                 }
                             }
                             else
                             {
-                                Utilities.logInfo(LogLevel.Error, "Invalid date format:  " + options.strDate);
+                                logger.Error("Invalid date format:  " + options.strDate);
                                 Environment.Exit(2);
                             };
-                        } else
-                        {
-                            // Start date not specified.
-                            startDate = DateTime.MaxValue;
-                        }
-
-                        if (string.IsNullOrEmpty(options.apiSecret) == false)
-                        {
-                            secret = options.apiSecret;
-                            Properties.Settings.Default.kalturaAdminSecret = secret;
-                            Properties.Settings.Default.Save();
-                            Utilities.logInfo(LogLevel.Info, "API Secret saved in user config file.");
-                        } else
-                        {
-                            secret = Properties.Settings.Default.kalturaAdminSecret;
-                        }
-
-                        if (options.partnerId != 0)
-                        {
-                            partnerId = options.partnerId;
-                            Properties.Settings.Default.kalturaPartnerId = partnerId;
-                            Properties.Settings.Default.Save();
-                            Utilities.logInfo(LogLevel.Info, "Partner ID saved in user config file.");
-                        } else
-                        {
-                            partnerId = Properties.Settings.Default.kalturaPartnerId;
-                        }
-
-                        if (options.metadataProfileId != 0)
-                        {
-                            targetMetadataProfileId = options.metadataProfileId;
-                            Properties.Settings.Default.targetMetadataProfileId = targetMetadataProfileId;
-                            Properties.Settings.Default.Save();
-                            Utilities.logInfo(LogLevel.Info, "Metadata Profile ID saved in user config file.");
                         }
                         else
                         {
-                            targetMetadataProfileId = Properties.Settings.Default.targetMetadataProfileId;
+                            // Start date not specified.
+                            startDate = DateTime.MaxValue;
                         }
                     })
                     .WithNotParsed(options =>
@@ -106,21 +57,13 @@ namespace AddZoomMetadata
                         Environment.Exit(3);
                     });
 
-            if (generateXml)
-            {
-                Utilities.logInfo(LogLevel.Info, "Generate XML output");
-            } else
-            {
-                Utilities.logInfo(LogLevel.Info, "Using API mode (no XML output)");
-            }
-
             // entryId and startDate options are mutually exclusive.  The command line
             // parser will prevent them from both being specified.
             if (string.IsNullOrEmpty(entryId) == false)
             {
-                string msg = string.Format("Processing a single media entry:  Id={0};", entryId);
-                Utilities.logInfo(LogLevel.Info, msg);
-            } else
+                logger.Info($"Processing a single media entry:  Id={entryId};");
+            }
+            else
             {
                 // Not in single entry mode
                 if (startDate == DateTime.MaxValue)
@@ -128,31 +71,44 @@ namespace AddZoomMetadata
                     // A start date has not been specified.  Use value in the app
                     // configuration file.
                     lastTimestamp = Properties.Settings.Default.startTimestamp;
-                    startDate = Utilities.unixToDotNetTime(lastTimestamp);
-                } else
+                    if (lastTimestamp == 0)
+                    {
+                        lastTimestamp = (int)new DateTime(2018, 1, 5).Ticks;
+                    }
+                    startDate = KochKalturaUtilities.util.unixToDotNetTime(lastTimestamp);
+                }
+                else
                 {
-                    lastTimestamp = Utilities.dotNetToUnixTime(startDate);
+                    lastTimestamp = KochKalturaUtilities.util.dotNetToUnixTime(startDate);
                 }
             }
 
-            KalturaUtilities kalUtil = null;
+            Kaltura.Client client = null;
             try
             {
-                kalUtil = new KalturaUtilities(partnerId, secret);
+                client = KochKalturaUtilities.ClientUtilities.createKalturaClient();
             }
-            catch
+            catch (Exception ex)
             {
-                Utilities.logInfo(LogLevel.Error, "Kaltura client initialization failed.  Did you set the Partner ID and Admin Secret in your user config file?");
+                logger.Error(ex, "Kaltura client initialization failed.");
                 Environment.Exit(4);
             }
 
-            //// If we're in "generateXml" mode, add the XML for a given entry
-            //// to a list.  When we're done with each page, create an XML format
-            //// bulk upload file.
-            List<string> lstXml = new List<string>();
-            int pageNum = 0;
-            int numPages = 0;
-            string dateStr = DateTime.Today.ToString("yyyy-MM-dd");
+            int targetMetadataProfileId = -1;
+            string metadataProfileName = "PSU Custom Metadata";
+            try
+            {
+                targetMetadataProfileId = KochKalturaUtilities.MetadataUtilities.getProfileIdByName(client, metadataProfileName);
+                logger.Info($"Target metadata profile found.  Name={metadataProfileName};Id={targetMetadataProfileId};");
+            }
+            catch (ApplicationException ex)
+            {
+                logger.Error(ex, $"ERROR:  {ex.Message})");
+                Environment.Exit(5);
+            }
+
+            int totalEntries = 0;
+            int entriesSoFar = 0;
 
             FilterPager pager = new FilterPager()
             {
@@ -164,15 +120,11 @@ namespace AddZoomMetadata
             if (string.IsNullOrEmpty(entryId) == false)
             {
                 mediaFilter.IdEqual = entryId;
-                string msg = string.Format("Targeting a single entry:  {0}.", entryId);
-                Utilities.logInfo(LogLevel.Info, msg);
+                logger.Info($"Targeting a single entry:  {entryId}");
             }
             else
             {
-                string msg = string.Format("Processing starts at {0} ({1})",
-                                           Utilities.unixToDotNetTime(lastTimestamp),
-                                           lastTimestamp);
-                Utilities.logInfo(LogLevel.Info, msg);
+                logger.Info($"Processing starts at {KochKalturaUtilities.util.unixToDotNetTime(lastTimestamp)} ({lastTimestamp})");
 
                 mediaFilter.OrderBy = MediaEntryOrderBy.CREATED_AT_ASC;
                 mediaFilter.CreatedAtGreaterThanOrEqual = lastTimestamp;
@@ -180,101 +132,64 @@ namespace AddZoomMetadata
                 if (targetCategory.Length > 0)
                 {
                     mediaFilter.CategoriesFullNameIn = targetCategory;
-                    msg = string.Format("Targeting entries in category:  {0}.", targetCategory);
-                    Utilities.logInfo(LogLevel.Info, msg);
+                    logger.Info($"Targeting entries in category:  {targetCategory}.");
                 }
             }
 
-            if (generateXml)
-            {
-                Utilities.logInfo(LogLevel.Info, "Creating XML output.");
-            }
-            else
-            {
-                Utilities.logInfo(LogLevel.Info, "API calls done on the fly (no XML).");
-            }
-
-            MetadataFilter metaFilt = new MetadataFilter()
-            {
-                MetadataObjectTypeEqual = MetadataObjectType.ENTRY,
-                MetadataProfileIdEqual = targetMetadataProfileId
-            };
-
+            // Process all media entries (filtered) that are in the target category (Zoom Recordings).
             try
             {
+                MetadataFilter metaFilt = new MetadataFilter()
+                {
+                    MetadataObjectTypeEqual = MetadataObjectType.ENTRY,
+                    MetadataProfileIdEqual = targetMetadataProfileId
+                };
+
                 bool donePaging = false;
                 string lastEntryId = "";
                 while (!donePaging)
                 {
-                    var result = MediaService.List(mediaFilter, pager)
-                                             .ExecuteAndWaitForResponse(kalUtil.client);
-                    if (result.Objects.Count == 0)
+                    List<MediaEntry> pageOfEntries = KochKalturaUtilities.MediaUtilities.getPageOfEntries(
+                                                                         client,
+                                                                         mediaFilter,
+                                                                         pager,
+                                                                         ref totalEntries,
+                                                                         entriesSoFar,
+                                                                         ref lastTimestamp,
+                                                                         ref donePaging);
+                    if (pageOfEntries == null)
                     {
                         donePaging = true;
+                        continue;
                     }
-                    else
+                    logger.Info("=======================================================" + KochKalturaUtilities.util.unixToDotNetTime(lastTimestamp).ToString("yyyy-MM-dd HH:mm tt"));
+                    foreach (MediaEntry entr in pageOfEntries)
                     {
-                        lstXml.Clear();
-                        Utilities.logInfo(LogLevel.Info, "=======================================================  " + Utilities.unixToDotNetTime(lastTimestamp).ToString());
-                        foreach (MediaEntry entr in result.Objects)
+                        try
                         {
-                            try
-                            {
-                                string tagXml = kalUtil.addZoomTag(entr, generateXml);
-                                string metaXml = kalUtil.addCustomMetadata(metaFilt, entr, generateXml, targetMetadataProfileId);
-
-                                if (generateXml)
-                                {
-                                    if ((string.IsNullOrEmpty(tagXml) == false) ||
-                                        (string.IsNullOrEmpty(metaXml) == false))
-                                    {
-                                        string xml = "<item><action>update</action ><entryId>" +
-                                                     entr.Id + "</entryId>" +
-                                                     tagXml + metaXml + "</item>";
-                                        lstXml.Add(xml);
-                                    }
-                                }
-
-                                string msg = string.Format("{0}:", entr.Id);
-                                Utilities.logInfo(LogLevel.Info, msg);
-                            } catch (Exception ex)
-                            {
-                                Utilities.logInfo(LogLevel.Error, Utilities.formatExceptionString(ex));
-                            }
-
-                            lastEntryId = entr.Id;
-                            lastTimestamp = entr.CreatedAt;
-                        } // end foreach item in page of media entries.
-
-                        if (lstXml.Count > 0)
-                        {
-                            // Write a page worth of XML data to a file.
-                            if (numPages == 0)
-                            {
-                                // The call to MediaService.List() will return an
-                                // estimate of the total number of media entries to be
-                                // processed.  It will probably change, but it's good 
-                                // enough for file naming.
-                                numPages = (result.TotalCount / pager.PageSize) + 1;
-                            }
-                            pageNum++;
-                            Utilities.writeXmlFile(dateStr, pageNum, numPages, lstXml);
+                            logger.Info($"{entr.Id}:");
+                            KochKalturaUtilities.MetadataUtilities.addZoomTag(client, entr);
+                            KochKalturaUtilities.MetadataUtilities.addCustomMetadata(client,
+                                                                                     metaFilt,
+                                                                                     entr,
+                                                                                     targetMetadataProfileId);
                         }
-                    } // page not empty
+                        catch (Exception ex)
+                        {
+                            logger.Error(KochKalturaUtilities.util.formatExceptionString(ex));
+                        }
 
-                    if ((result.Objects.Count == 1) && (lastEntryId == result.Objects[0].Id))
-                    {
-                        // Only the very last call should ever return a single object.
-                        donePaging = true;
-                    }
+                        lastEntryId = entr.Id;
+                        lastTimestamp = entr.CreatedAt;
+                    } // end foreach item in page of media entries.
+
                     mediaFilter.CreatedAtGreaterThanOrEqual = lastTimestamp;
                 } // while paging
             }
             catch (Exception ex)
             {
-                string msg = System.String.Format("The AddZoomTag task encountered the following exception and exited.\n{0}",
-                                                  Utilities.formatExceptionString(ex));
-                Utilities.logInfo(LogLevel.Error, msg);
+                logger.Error("The AddZoomTag task encountered the following exception and exited.\n{0}",
+                             KochKalturaUtilities.util.formatExceptionString(ex));
 
                 // In case of an exception, bump the last timestamp by one.  Hopefully we'll
                 // get past the offending entry if that's the problem.
@@ -288,10 +203,128 @@ namespace AddZoomMetadata
                 {
                     Properties.Settings.Default.startTimestamp = lastTimestamp;
                     Properties.Settings.Default.Save();
-                    Utilities.logInfo(LogLevel.Info, "Last timestamp saved in user config file.");
+                    logger.Info("Last timestamp saved in user config file.");
                 }
             }
-            Utilities.logInfo(LogLevel.Info, "done.");
+            logger.Info("done processing new media in the Zoom Recordings category.");
+            logger.Info("");
+
+            // =================================================================================================
+            // =================================================================================================
+            // =================================================================================================
+            // Process all media entries (filtered) that are in the target category (Zoom Recordings).
+            try
+            {
+                logger.Info("Processing Zoom Marketplace generated media files.");
+                logger.Info("Processing starts at {0}", startDate.ToString("yyyy-MM-dd HH:mm tt"));
+
+                MetadataFilter metaFilt = new MetadataFilter()
+                {
+                    MetadataObjectTypeEqual = MetadataObjectType.ENTRY,
+                    MetadataProfileIdEqual = targetMetadataProfileId
+                };
+
+                lastTimestamp = Properties.Settings.Default.marketplaceTimestamp;
+                if (lastTimestamp == 0)
+                {
+                    // This is when the Marketplace App was installed.
+                    startDate = new DateTime(2021, 1, 5);
+                    lastTimestamp = KochKalturaUtilities.util.dotNetToUnixTime(startDate);
+                }
+                else
+                {
+                    startDate = KochKalturaUtilities.util.unixToDotNetTime(lastTimestamp);
+                }
+
+                mediaFilter = new MediaEntryFilter
+                {
+                    CreatedAtGreaterThanOrEqual = lastTimestamp,
+                    OrderBy = MediaEntryOrderBy.CREATED_AT_ASC
+                    // AdminTagsLike = "zoomentries"
+                };
+
+                int targetCategoryId = KochKalturaUtilities.CategoryUtilities.getCategoryByFullname(client, targetCategory);
+                bool donePaging = false;
+                string lastEntryId = "";
+                while (!donePaging)
+                {
+                    List<MediaEntry> pageOfEntries = KochKalturaUtilities.MediaUtilities.getPageOfEntries(
+                                                                         client,
+                                                                         mediaFilter,
+                                                                         pager,
+                                                                         ref totalEntries,
+                                                                         entriesSoFar,
+                                                                         ref lastTimestamp,
+                                                                         ref donePaging);
+                    if (pageOfEntries == null)
+                    {
+                        donePaging = true;
+                        continue;
+                    }
+                    logger.Info("=======================================================" + KochKalturaUtilities.util.unixToDotNetTime(lastTimestamp).ToString("yyyy-MM-dd HH:mm tt"));
+                    foreach (MediaEntry entr in pageOfEntries)
+                    {
+                        if ((entr.AdminTags == null) || (!entr.AdminTags.Contains("zoomentry"))) continue;
+
+                        try
+                        {
+                            logger.Info($"{entr.Id}:");
+                            try
+                            {
+                                KochKalturaUtilities.CategoryEntryUtilities.addEntryToCategory(client, entr.Id, targetCategoryId);
+                            }
+                            catch (Kaltura.APIException ex)
+                            {
+                                if (ex.Code == APIException.CATEGORY_ENTRY_ALREADY_EXISTS)
+                                {
+                                    // ignore
+                                    //logger.Info("\tEntry already in Zoom Recordings category");
+                                }
+                                else
+                                {
+                                    throw;
+                                }
+                            }
+                            KochKalturaUtilities.MetadataUtilities.addZoomTag(client, entr);
+                            KochKalturaUtilities.MetadataUtilities.addCustomMetadata(client,
+                                                                                     metaFilt,
+                                                                                     entr,
+                                                                                     targetMetadataProfileId);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Error(KochKalturaUtilities.util.formatExceptionString(ex));
+                        }
+
+                        lastEntryId = entr.Id;
+                        lastTimestamp = entr.CreatedAt;
+                    } // end foreach item in page of media entries.
+
+                    mediaFilter.CreatedAtGreaterThanOrEqual = lastTimestamp;
+                } // while paging
+            }
+            catch (Exception ex)
+            {
+                logger.Error("The AddZoomTag task encountered the following exception and exited.\n{0}",
+                             KochKalturaUtilities.util.formatExceptionString(ex));
+
+                // In case of an exception, bump the last timestamp by one.  Hopefully we'll
+                // get past the offending entry if that's the problem.
+                lastTimestamp++;
+            }
+            finally
+            {
+                // Unless we're in "process a single entry" mode, save the last timestamp.
+                // That's where we'll start on the next run.
+                if (string.IsNullOrEmpty(entryId))
+                {
+                    Properties.Settings.Default.marketplaceTimestamp = lastTimestamp + 1;
+                    Properties.Settings.Default.Save();
+                    logger.Info("Last marketplace timestamp saved in user config file.");
+                }
+            }
+            logger.Info("....  done");
+
         } // Main()
     }  // class AddZoomMetadata
 } // namespace

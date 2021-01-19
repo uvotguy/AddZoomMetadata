@@ -12,7 +12,7 @@ namespace AddZoomMetadata.Properties {
     
     
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.4.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.VisualStudio.Editors.SettingsDesigner.SettingsSingleFileGenerator", "16.8.1.0")]
     internal sealed partial class Settings : global::System.Configuration.ApplicationSettingsBase {
         
         private static Settings defaultInstance = ((Settings)(global::System.Configuration.ApplicationSettingsBase.Synchronized(new Settings())));
@@ -20,18 +20,6 @@ namespace AddZoomMetadata.Properties {
         public static Settings Default {
             get {
                 return defaultInstance;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public int targetMetadataProfileId {
-            get {
-                return ((int)(this["targetMetadataProfileId"]));
-            }
-            set {
-                this["targetMetadataProfileId"] = value;
             }
         }
         
@@ -47,39 +35,24 @@ namespace AddZoomMetadata.Properties {
             }
         }
         
-        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("Zoom Recordings")]
         public string targetCategory {
             get {
                 return ((string)(this["targetCategory"]));
             }
-            set {
-                this["targetCategory"] = value;
-            }
         }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("0")]
-        public int kalturaPartnerId {
+        public int marketplaceTimestamp {
             get {
-                return ((int)(this["kalturaPartnerId"]));
+                return ((int)(this["marketplaceTimestamp"]));
             }
             set {
-                this["kalturaPartnerId"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("Not set")]
-        public string kalturaAdminSecret {
-            get {
-                return ((string)(this["kalturaAdminSecret"]));
-            }
-            set {
-                this["kalturaAdminSecret"] = value;
+                this["marketplaceTimestamp"] = value;
             }
         }
     }
