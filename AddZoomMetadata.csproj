@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0-windows10.0.22000.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <StartupObject>AddZoomMetadata.Program</StartupObject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Program.cs">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.9.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="6.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="6.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="NLog" Version="5.0.1" />
+    <PackageReference Include="NLog.Extensions.Logging" Version="5.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="KalturaClient">
+      <HintPath>..\KochKalturaUtilities\bin\Debug\net6.0-windows\KalturaClient.dll</HintPath>
+    </Reference>
+    <Reference Include="KochKalturaUtilities">
+      <HintPath>..\KochKalturaUtilities\bin\Debug\net6.0-windows\KochKalturaUtilities.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

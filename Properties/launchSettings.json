@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "AddZoomMetadata": {
+      "commandName": "Project",
+      "commandLineArgs": "--start-date=\"2022-07-20 20:00:00\""
+    }
+  }
+}
